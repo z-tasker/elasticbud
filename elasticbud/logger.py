@@ -21,7 +21,7 @@ def get_logger(
     file_level: int = logging.DEBUG,
 ) -> logging.Logger:
     """
-        Wrapper for setting up and getting logger
+    Wrapper for setting up and getting logger
     """
 
     if not name.startswith("elasticbud."):

@@ -64,7 +64,7 @@ def test_index_to_elasticsearch() -> None:
         index=TEST_INDEX_NAME,
         docs=docs[300:],  # from the 300th document onward (200 already exist)
         identity_fields=["date", "article"],
-        batch_size=300, # test batch size customization
+        batch_size=300,  # test batch size customization
     )
 
     client.indices.refresh(index=TEST_INDEX_NAME)
@@ -185,6 +185,7 @@ def test_get_response_value_wildcard() -> None:
 
     assert top_5_view_counts == expected_top_5_view_counts
 
+
 @pytest.mark.depends(on=["test_index_to_elasticsearch"])
 def test_get_response_value_composite_aggregation() -> None:
     client = get_elasticsearch_client()
@@ -197,20 +198,16 @@ def test_get_response_value_composite_aggregation() -> None:
                     "size": 10,
                     "sources": [
                         {"article": {"terms": {"field": "article"}}},
-                        {"date": {"terms": {"field": "date"}}}
-                    ]
+                        {"date": {"terms": {"field": "date"}}},
+                    ],
                 },
-                "aggregations": {
-                    "avg_views": {
-                        "avg": { "field": "views" }
-                    }
-                }
+                "aggregations": {"avg_views": {"avg": {"field": "views"}}},
             }
-        }
+        },
     }
-    
+
     all_articles_avg_views_bucket_sets = [
-        key 
+        key
         for key in get_response_value(
             elasticsearch_client=client,
             index=TEST_INDEX_NAME,
@@ -223,7 +220,7 @@ def test_get_response_value_composite_aggregation() -> None:
     assert len(all_articles_avg_views_bucket_sets) == 90
 
     all_articles_avg_views_buckets = [
-        key 
+        key
         for key in get_response_value(
             elasticsearch_client=client,
             index=TEST_INDEX_NAME,
@@ -240,7 +237,15 @@ def test_get_response_value_composite_aggregation() -> None:
 def test_fields_in_hits() -> None:
     client = get_elasticsearch_client()
 
-    unique_fields = fields_in_hits(get_response_value(elasticsearch_client=client, index=TEST_INDEX_NAME,query={"query": {"match_all": {}}},value_keys=["hits", "hits", "*"], debug=True, size=100))
+    unique_fields = fields_in_hits(
+        get_response_value(
+            elasticsearch_client=client,
+            index=TEST_INDEX_NAME,
+            query={"query": {"match_all": {}}},
+            value_keys=["hits", "hits", "*"],
+            debug=True,
+            size=100,
+        )
+    )
 
     assert sorted(unique_fields) == ["article", "date", "rank", "views"]
-

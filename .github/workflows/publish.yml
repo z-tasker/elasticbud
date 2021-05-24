@@ -1,0 +1,40 @@
+name: Publish 
+on:
+  push: 
+    tags:
+      - "*"
+
+jobs:
+  publish:
+    environment: ci
+    name: Publish to PYPI
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+
+    - uses: Gr1N/setup-poetry@v4
+
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
+    
+    - name: Install dependencies
+      run: |
+        poetry install
+
+    - name: Run full pytest coverage 
+      run: |
+        poetry run pytest --cov=elasticbud
+
+    - name: Publish Package to PYPI
+      env:
+        PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+      run: | 
+        poetry config pypi-token.pypi ${PYPI_API_TOKEN} && poetry publish --build

@@ -123,7 +123,7 @@ def doc_gen(
 
 def fields_in_hits(hits: Iterator[Dict[str, Any]]) -> List[str]:
     """
-        List all unique field names present in a set of hits
+    List all unique field names present in a set of hits
     """
 
     fields = set()
@@ -162,12 +162,12 @@ def index_to_elasticsearch(
             template_body = index_template
             template_source = "passed dictionary"
         else:
-            raise ValueError(f"could not figure out how to treat passed index_template: {index_template}")
+            raise ValueError(
+                f"could not figure out how to treat passed index_template: {index_template}"
+            )
 
-        elasticsearch_client.indices.put_template(
-            name=index, body=template_body
-        )
-        log.info(f"applied index template named '{index}' from {template_source}") 
+        elasticsearch_client.indices.put_template(name=index, body=template_body)
+        log.info(f"applied index template named '{index}' from {template_source}")
 
     if batch_size is None:
         elasticsearch.helpers.bulk(
@@ -191,7 +191,6 @@ def index_to_elasticsearch(
             )
     if not quiet:
         log.debug("bulk indexing complete")
-
 
 
 @retry(tries=3, backoff=5, delay=2)
@@ -225,7 +224,9 @@ def get_response_value(
             ) from exc
         values = 0
         while len(list(recurse_splat_key(resp, value_keys))) > 0:
-            if len(list(recurse_splat_key(resp, value_keys))) == 1 and list(recurse_splat_key(resp, value_keys)) == [[]]:
+            if len(list(recurse_splat_key(resp, value_keys))) == 1 and list(
+                recurse_splat_key(resp, value_keys)
+            ) == [[]]:
                 # special case if the composite aggregation is asking to return the buckets without a terminal wildcard
                 break
             for value in recurse_splat_key(resp, value_keys):
