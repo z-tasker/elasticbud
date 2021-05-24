@@ -1,0 +1,54 @@
+name: Test
+on:
+  pull_request:
+  push: 
+
+jobs:
+  test:
+    environment: ci
+    name: Run test suite
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Configure sysctl limits
+      run: |
+        sudo swapoff -a
+        sudo sysctl -w vm.swappiness=1
+        sudo sysctl -w fs.file-max=262144
+        sudo sysctl -w vm.max_map_count=262144
+    
+    - uses: actions/setup-python@v1
+      with:
+        python-version: 3.8
+
+    - uses: Gr1N/setup-poetry@v4
+
+    - uses: actions/cache@v2
+      with:
+        path: ~/.cache/pypoetry/virtualenvs
+        key: ${{ runner.os }}-poetry-${{ hashFiles('poetry.lock') }}
+    
+    - name: Install dependencies
+      run: |
+        poetry install
+
+    - name: Run full pytest coverage 
+      env:
+        ELASTICBUDTEST_CLIENT_FQDN: ${{ secrets.ELASTICSEARCH_CLIENT_FQND }}
+        ELASTICBUDTEST_USERNAME: ${{ secrets.ELASTICSEARCH_USERNAME }}
+        ELASTICBUDTEST_PASSWORD: ${{ secrets.ELASTICSEARCH_PASSWORD }}
+      run: |
+        poetry run pytest --cov=elasticbud -s
+
+    - name: Build python wheel
+      run: |
+        poetry build
+
+    - name: Save build artifacts on action
+      uses: actions/upload-artifact@v2
+      with:
+        name: wheel
+        path: ./dist/elasticbud-*-py3-none-any.whl
