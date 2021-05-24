@@ -12,19 +12,22 @@ def recurse_splat_key(
     """
         recurse to key with splat syntax for specifying "each key in list of objects"
     """
-    try:
-        if value_keys[-1] == "*":
-            raise InvalidSplatError(f"cannot end splat with '*': {value_keys}")
-    except IndexError as e:
-        raise IndexError(f"recursed to empty keys: {data}")
+    #try:
+    #    if value_keys[-1] == "*":
+    #        raise InvalidSplatError(f"cannot end splat with '*': {value_keys}")
+    #except IndexError as e:
+    #    raise IndexError(f"recursed to empty keys: {data}")
 
     value_key = value_keys[0]
 
     if value_key == "*":
         if not isinstance(data, list):
             raise AsteriskNotAtListError(f"data is not a list, has keys {data.keys()}")
-        for datum in data:
-            yield from recurse_splat_key(datum, value_keys[1:])
+        if len(value_keys) == 1: # last element is *, return data here
+            yield from data
+        else: # need to keep recursing beyond wildcard
+            for datum in data:
+                yield from recurse_splat_key(datum, value_keys[1:])
 
     else:
         if value_key not in data:

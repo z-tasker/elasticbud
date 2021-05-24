@@ -122,6 +122,9 @@ def doc_gen(
 
 
 def fields_in_hits(hits: Iterator[Dict[str, Any]]) -> List[str]:
+    """
+        List all unique field names present in a set of hits
+    """
 
     fields = set()
     for hit in hits:
@@ -144,17 +147,27 @@ def index_to_elasticsearch(
     docs: Iterator[Dict[str, Any]],
     identity_fields: Optional[List[str]] = None,
     overwrite: bool = False,
-    apply_template_file: Optional[Union[str, Path]] = None,
+    index_template: Optional[Union[str, Path, Dict[str, Any]]] = None,
     batch_size: Optional[int] = None,
     quiet: bool = False,
 ) -> None:
 
     log = get_logger("elasticbud.index_to_elasticsearch")
 
-    if apply_template_file:
+    if index_template is not None:
+        if isinstance(index_template, str) or isinstance(index_template, Path):
+            template_body = json.loads(Path(index_template).read_text())
+            template_source = "JSON file {index_template}"
+        elif isinstance(index_template, dict):
+            template_body = index_template
+            template_source = "passed dictionary"
+        else:
+            raise ValueError(f"could not figure out how to treat passed index_template: {index_template}")
+
         elasticsearch_client.indices.put_template(
-            name=index, body=json.loads(Path(apply_template_file).read_text())
+            name=index, body=template_body
         )
+        log.info(f"applied index template named '{index}' from {template_source}") 
 
     if batch_size is None:
         elasticsearch.helpers.bulk(
@@ -180,27 +193,6 @@ def index_to_elasticsearch(
         log.debug("bulk indexing complete")
 
 
-@retry(tries=3, backoff=5, delay=2)
-def all_field_values(
-    elasticsearch_client: Elasticsearch,
-    field: str,
-    query: Dict[str, Any],
-    index_pattern: str,
-) -> Generator[str, None, None]:
-
-    log = get_logger("elasticbud.all_field_values")
-
-    s = Search(using=elasticsearch_client, index=index_pattern)
-    agg = {"aggs": {"all_values": {"terms": {"field": field, "size": 100000}}}}
-    agg["query"] = query["query"]
-    s.update_from_dict(agg)
-    resp = s.execute()
-    unique_values = 0
-    for item in resp.aggregations.all_values.buckets:
-        yield item.key
-        unique_values += 1
-    log.debug(f"{unique_values} unique values for {field}")
-
 
 @retry(tries=3, backoff=5, delay=2)
 def get_response_value(
@@ -215,6 +207,8 @@ def get_response_value(
 ) -> Union[Any, Generator[Any]]:
 
     log = get_logger("elasticbud.get_response_value")
+
+    query = copy.deepcopy(query)
 
     if debug:
         log.info(f"retrieving value from query against {index} at {value_keys}")
@@ -231,6 +225,9 @@ def get_response_value(
             ) from exc
         values = 0
         while len(list(recurse_splat_key(resp, value_keys))) > 0:
+            if len(list(recurse_splat_key(resp, value_keys))) == 1 and list(recurse_splat_key(resp, value_keys)) == [[]]:
+                # special case if the composite aggregation is asking to return the buckets without a terminal wildcard
+                break
             for value in recurse_splat_key(resp, value_keys):
                 yield value
                 values += 1

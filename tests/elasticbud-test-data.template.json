@@ -1,0 +1,23 @@
+{
+  "index_patterns": ["elasticbud-test-data"],
+  "settings": {
+    "number_of_shards": 1,
+    "number_of_replicas": 1
+  },
+  "mappings": {
+    "properties" : {
+      "article": {
+        "type": "keyword"
+      },
+      "date" : {
+        "type" : "date"
+      },
+      "views": {
+        "type": "long"
+      },
+      "rank": {
+        "type": "long"
+      }
+    }
+  }
+}
