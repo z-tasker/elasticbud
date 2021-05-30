@@ -43,7 +43,7 @@ jobs:
         ELASTICBUDTEST_USERNAME: ${{ secrets.ELASTICSEARCH_USERNAME }}
         ELASTICBUDTEST_PASSWORD: ${{ secrets.ELASTICSEARCH_PASSWORD }}
       run: |
-        poetry run pytest --cov=elasticbud -s
+        poetry run pytest -v --cov=elasticbud -s
 
     - name: Build python wheel
       run: |

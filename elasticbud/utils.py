@@ -40,3 +40,9 @@ def recurse_splat_key(
             yield data
         else:
             yield from recurse_splat_key(data, value_keys)
+
+
+def batch(iterable: Iterable, n: int = 1) -> Generator[Iterable, None, None]:
+    l = len(iterable)
+    for ndx in range(0, l, n):
+        yield iterable[ndx : min(ndx + n, l)]

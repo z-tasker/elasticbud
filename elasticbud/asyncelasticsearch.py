@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 
 import elasticsearch
-from elasticsearch import Elasticsearch, AsyncElasticsearch
-from elasticsearch.helpers import bulk
+from elasticsearch import AsyncElasticsearch
+from elasticsearch.helpers import async_bulk
 from tenacity import retry, stop_after_attempt, wait_fixed
 
 from .errors import (
@@ -16,18 +16,18 @@ from .logger import get_logger
 from .utils import batch, recurse_splat_key
 
 
-def check_elasticsearch(
-    elasticsearch_client: Elasticsearch,
+async def async_check_elasticsearch(
+    elasticsearch_client: AsyncElasticsearch,
 ) -> None:
 
-    log = get_logger("elasticbud.check_elasticsearch")
+    log = get_logger("elasticbud.async_check_elasticsearch")
 
     host = elasticsearch_client.transport.hosts[0]["host"]
     port = elasticsearch_client.transport.hosts[0]["port"]
 
     try:
-        health = elasticsearch_client.cluster.health()
-        version = elasticsearch_client.info()["version"]["number"]
+        health = await elasticsearch_client.cluster.health()
+        version = (await elasticsearch_client.info())["version"]["number"]
         log.info(
             f"cluster at {host}:{port} is called '{health['cluster_name']}' on {version} and is {health['status']}"
         )
@@ -40,15 +40,15 @@ def check_elasticsearch(
 
 
 @retry(stop=stop_after_attempt(5), wait=wait_fixed(0.5))
-def document_exists(
-    elasticsearch_client: Elasticsearch,
+async def async_document_exists(
+    elasticsearch_client: AsyncElasticsearch,
     doc: Dict[str, Any],
     index: str,
     identity_fields: List[str],
     delete_if_exists: bool = False,
 ) -> bool:
 
-    log = get_logger("elasticbud.document_exists")
+    log = get_logger("elasticbud.async_document_exists")
 
     query_filters = list()
     for field in identity_fields:
@@ -65,7 +65,7 @@ def document_exists(
     body = {"query": {"bool": {"filter": query_filters}}}
 
     try:
-        resp = elasticsearch_client.search(index=index, body=body)
+        resp = await elasticsearch_client.search(index=index, body=body)
     except elasticsearch.exceptions.NotFoundError:
         return False
 
@@ -78,7 +78,7 @@ def document_exists(
                 log.info(
                     f"deleting existing {index} document matching query (id: {hit['_id']})"
                 )
-                elasticsearch_client.delete(index=index, id=hit["_id"])
+                await elasticsearch_client.delete(index=index, id=hit["_id"])
                 return False
         else:
             return True
@@ -86,8 +86,8 @@ def document_exists(
         return False
 
 
-def doc_gen(
-    elasticsearch_client: Elasticsearch,
+async def async_doc_gen(
+    elasticsearch_client: AsyncElasticsearch,
     docs: List[Dict[str, Any]],
     index: str,
     identity_fields: Optional[List[str]],
@@ -95,11 +95,11 @@ def doc_gen(
     quiet: bool = False,
 ) -> Generator[Dict[str, Any], None, None]:
 
-    log = get_logger("elasticbud.doc_gen")
+    log = get_logger("elasticbud.async_doc_gen")
 
     if identity_fields is not None:
         # must have manage permission on index to refresh, this is only necessary for idempotent indexing calls
-        elasticsearch_client.indices.refresh(index=index, ignore_unavailable=True)
+        await elasticsearch_client.indices.refresh(index=index, ignore_unavailable=True)
 
     yielded = 0
     exists = 0
@@ -107,7 +107,7 @@ def doc_gen(
         doc = dict(
             doc
         )  # convert Index classes to plain dictionaries for Elasticsearch API
-        if identity_fields is not None and document_exists(
+        if identity_fields is not None and await async_document_exists(
             elasticsearch_client,
             doc,
             index,
@@ -127,8 +127,8 @@ def doc_gen(
 
 
 @retry(stop=stop_after_attempt(5), wait=wait_fixed(0.5))
-def index_to_elasticsearch(
-    elasticsearch_client: Elasticsearch,
+async def async_index_to_elasticsearch(
+    elasticsearch_client: AsyncElasticsearch,
     index: str,
     docs: Iterator[Dict[str, Any]],
     identity_fields: Optional[List[str]] = None,
@@ -138,7 +138,7 @@ def index_to_elasticsearch(
     quiet: bool = False,
 ) -> None:
 
-    log = get_logger("elasticbud.index_to_elasticsearch")
+    log = get_logger("elasticbud.async_index_to_elasticsearch")
 
     if index_template is not None:
         if isinstance(index_template, str) or isinstance(index_template, Path):
@@ -152,21 +152,21 @@ def index_to_elasticsearch(
                 f"could not figure out how to treat passed index_template: {index_template}"
             )
 
-        elasticsearch_client.indices.put_template(name=index, body=template_body)
+        await elasticsearch_client.indices.put_template(name=index, body=template_body)
         log.info(f"applied index template named '{index}' from {template_source}")
 
     if batch_size is None:
-        bulk(
+        await async_bulk(
             elasticsearch_client,
-            doc_gen(
+            async_doc_gen(
                 elasticsearch_client, docs, index, identity_fields, overwrite, quiet
             ),
         )
     else:
         for docs_batch in batch(docs, n=batch_size):
-            bulk(
+            await async_bulk(
                 elasticsearch_client,
-                doc_gen(
+                async_doc_gen(
                     elasticsearch_client,
                     docs_batch,
                     index,
@@ -180,8 +180,8 @@ def index_to_elasticsearch(
 
 
 @retry(stop=stop_after_attempt(5), wait=wait_fixed(0.5))
-def get_response_value(
-    elasticsearch_client: Elasticsearch,
+async def async_get_response_value(
+    elasticsearch_client: AsyncElasticsearch,
     index: str,
     query: Dict[str, Any],
     value_keys: List[str],
@@ -199,7 +199,7 @@ def get_response_value(
         log.info(f"retrieving value from query against {index} at {value_keys}")
         print(f"GET /{index}/_search?size={size}\n{json.dumps(query,indent=2)}")
 
-    resp = elasticsearch_client.search(index=index, body=query, size=size)
+    resp = await elasticsearch_client.search(index=index, body=query, size=size)
 
     if composite_aggregation_name is not None:
         try:
@@ -223,7 +223,7 @@ def get_response_value(
             query["aggs"][composite_aggregation_name]["composite"].update(
                 after=after_key
             )
-            resp = elasticsearch_client.search(index=index, body=query, size=size)
+            resp = await elasticsearch_client.search(index=index, body=query, size=size)
         log.debug(f"composite aggregation yielded {values} values")
 
     else:
@@ -234,7 +234,8 @@ def get_response_value(
         elif len(values) == 1:
             yield values[0]
         else:
-            yield from values
+            for value in values:
+                yield value
 
         if debug:
             log.info(
@@ -242,13 +243,13 @@ def get_response_value(
             )
 
 
-def fields_in_hits(hits: Iterator[Dict[str, Any]]) -> List[str]:
+async def async_fields_in_hits(hits: Iterator[Dict[str, Any]]) -> List[str]:
     """
     List all unique field names present in a set of hits
     """
 
     fields = set()
-    for hit in hits:
+    async for hit in hits:
         for field in hit["_source"].keys():
             fields.add(field)
 

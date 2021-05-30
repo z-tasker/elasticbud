@@ -35,7 +35,7 @@ jobs:
         ELASTICBUDTEST_USERNAME: ${{ secrets.ELASTICSEARCH_USERNAME }}
         ELASTICBUDTEST_PASSWORD: ${{ secrets.ELASTICSEARCH_PASSWORD }}
       run: |
-        poetry run pytest --cov=elasticbud
+        poetry run pytest --cov=elasticbud -v
 
     - name: Publish Package to PYPI
       env:

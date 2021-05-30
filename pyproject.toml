@@ -1,15 +1,16 @@
 [tool.poetry]
 name = "elasticbud"
-version = "1.0.0"
-description = ""
+version = "1.1.0"
+description = "Wrappers for writing concise Elasticsearch-integrated python APIs."
 authors = ["tasker <tasker@ialcloud.xyz>"]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-elasticsearch = "^7.12.1"
+elasticsearch = {extras = ["async"], version = "^7.13.0"}
 elasticsearch-dsl = "^7.3.0"
-retry = "^0.9.2"
 pytest-depends = "^1.0.1"
+pytest-asyncio = "^0.15.1"
+tenacity = "^7.0.0"
 
 [tool.poetry.dev-dependencies]
 black = "^21.5b1"
