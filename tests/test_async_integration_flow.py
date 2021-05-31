@@ -7,6 +7,7 @@ import elasticsearch
 import pytest
 
 from elasticbud import (
+    get_async_elasticsearch_client,
     async_check_elasticsearch,
     async_document_exists,
     async_index_to_elasticsearch,
@@ -15,7 +16,6 @@ from elasticbud import (
 )
 from elasticbud.errors import ElasticsearchUnreachableError
 
-from client import get_async_elasticsearch_client
 
 TEST_INDEX_NAME = "elasticbud-test-data"
 

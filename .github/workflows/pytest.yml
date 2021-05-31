@@ -39,9 +39,9 @@ jobs:
 
     - name: Run full pytest coverage 
       env:
-        ELASTICBUDTEST_CLIENT_FQDN: ${{ secrets.ELASTICSEARCH_CLIENT_FQDN }}
-        ELASTICBUDTEST_USERNAME: ${{ secrets.ELASTICSEARCH_USERNAME }}
-        ELASTICBUDTEST_PASSWORD: ${{ secrets.ELASTICSEARCH_PASSWORD }}
+        ELASTICBUD_CLIENT_FQDN: ${{ secrets.ELASTICSEARCH_CLIENT_FQDN }}
+        ELASTICBUD_USERNAME: ${{ secrets.ELASTICSEARCH_USERNAME }}
+        ELASTICBUD_PASSWORD: ${{ secrets.ELASTICSEARCH_PASSWORD }}
       run: |
         poetry run pytest -v --cov=elasticbud -s
 

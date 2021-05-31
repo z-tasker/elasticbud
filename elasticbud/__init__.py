@@ -13,3 +13,5 @@ from .asyncelasticsearch import (
     async_get_response_value,
     async_fields_in_hits,
 )
+
+from .client import get_elasticsearch_client, get_async_elasticsearch_client

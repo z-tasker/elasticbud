@@ -6,12 +6,13 @@ import elasticsearch
 
 
 def get_elasticsearch_client(
-    elasticsearch_client_fqdn: Optional[str] = os.getenv("ELASTICBUDTEST_CLIENT_FQDN"),
+    elasticsearch_client_fqdn: Optional[str] = os.getenv("ELASTICBUD_CLIENT_FQDN"),
     elasticsearch_client_port: Union[str, int] = os.getenv(
-        "ELASTICBUDTEST_CLIENT_PORT", 443
+        "ELASTICBUD_CLIENT_PORT", 443
     ),
-    elasticsearch_username: Optional[str] = os.getenv("ELASTICBUDTEST_USERNAME"),
-    elasticsearch_password: Optional[str] = os.getenv("ELASTICBUDTEST_PASSWORD"),
+    elasticsearch_username: Optional[str] = os.getenv("ELASTICBUD_USERNAME"),
+    elasticsearch_password: Optional[str] = os.getenv("ELASTICBUD_PASSWORD"),
+    elasticsearch_timeout: int = os.getenv("ELASTICBUD_TIMEOUT", 300),
 ) -> elasticsearch.Elasticsearch:
 
     for i, arg in enumerate(
@@ -41,12 +42,13 @@ def get_elasticsearch_client(
 
 
 def get_async_elasticsearch_client(
-    elasticsearch_client_fqdn: Optional[str] = os.getenv("ELASTICBUDTEST_CLIENT_FQDN"),
+    elasticsearch_client_fqdn: Optional[str] = os.getenv("ELASTICBUD_CLIENT_FQDN"),
     elasticsearch_client_port: Union[str, int] = os.getenv(
-        "ELASTICBUDTEST_CLIENT_PORT", 443
+        "ELASTICBUD_CLIENT_PORT", 443
     ),
-    elasticsearch_username: Optional[str] = os.getenv("ELASTICBUDTEST_USERNAME"),
-    elasticsearch_password: Optional[str] = os.getenv("ELASTICBUDTEST_PASSWORD"),
+    elasticsearch_username: Optional[str] = os.getenv("ELASTICBUD_USERNAME"),
+    elasticsearch_password: Optional[str] = os.getenv("ELASTICBUD_PASSWORD"),
+    elasticsearch_timeout: int = os.getenv("ELASTICBUD_TIMEOUT", 300),
 ) -> elasticsearch.AsyncElasticsearch:
 
     for i, arg in enumerate(
@@ -66,7 +68,7 @@ def get_async_elasticsearch_client(
                 "port": elasticsearch_client_port,
             }
         ],
-        timeout=300,
+        timeout=elasticsearch_timeout,
         http_auth=(elasticsearch_username, elasticsearch_password),
         use_ssl=True,
         verify_certs=True,
