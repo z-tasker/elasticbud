@@ -143,7 +143,7 @@ def index_to_elasticsearch(
     if index_template is not None:
         if isinstance(index_template, str) or isinstance(index_template, Path):
             template_body = json.loads(Path(index_template).read_text())
-            template_source = "JSON file {index_template}"
+            template_source = f"JSON file {index_template}"
         elif isinstance(index_template, dict):
             template_body = index_template
             template_source = "passed dictionary"
@@ -153,7 +153,7 @@ def index_to_elasticsearch(
             )
 
         elasticsearch_client.indices.put_template(name=index, body=template_body)
-        log.info(f"applied index template named '{index}' from {template_source}")
+        log.debug(f"applied index template named '{index}' from {template_source}")
 
     if batch_size is None:
         bulk(

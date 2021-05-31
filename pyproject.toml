@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "elasticbud"
-version = "1.2.0"
+version = "1.2.1"
 description = "Wrappers for writing concise Elasticsearch-integrated python APIs."
 authors = ["tasker <tasker@ialcloud.xyz>"]
 
