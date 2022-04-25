@@ -78,8 +78,11 @@ async def async_document_exists(
                 log.info(
                     f"deleting existing {index} document matching query (id: {hit['_id']})"
                 )
-                await elasticsearch_client.delete(index=index, id=hit["_id"])
-                return False
+                try:
+                    await elasticsearch_client.delete(index=index, id=hit["_id"])
+                except elasticsearch.exceptions.NotFoundError:
+                    continue
+            return False
         else:
             return True
     else:

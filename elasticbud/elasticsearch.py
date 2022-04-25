@@ -78,8 +78,11 @@ def document_exists(
                 log.info(
                     f"deleting existing {index} document matching query (id: {hit['_id']})"
                 )
-                elasticsearch_client.delete(index=index, id=hit["_id"])
-                return False
+                try:
+                    elasticsearch_client.delete(index=index, id=hit["_id"])
+                except elasticsearch.exceptions.NotFoundError:
+                    continue
+            return False
         else:
             return True
     else:
